@@ -73,7 +73,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   /* ---- три экрана ---- */
   .views { flex:1; position:relative; overflow:hidden; }
-  .track { display:flex; width:300%; height:100%; transition: transform .28s ease; will-change: transform; }
+  .track { display:flex; width:300%; height:100%; transform:translateX(-33.3333%); transition: transform .28s ease; will-change: transform; }
   .pane { flex:0 0 33.3333%; width:33.3333%; height:100%; position:relative; overflow:hidden; }
   .scroll { height:100%; overflow:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; }
   .pane.form .scroll { overflow-x:hidden; }
@@ -1085,6 +1085,7 @@ forceBtn.addEventListener("click", download);
   if (window.innerWidth >= 1400 && (h === "" || h === "demo")) setTriple(true);
   else if (h === "obrazec" || h === "obr") show(0, true);
   else if (h === "blank" || h === "demo") show(2, true);
+  else show(1, true);
 })();
 
 // демонстрационное заполнение (открыть страницу с #demo)
