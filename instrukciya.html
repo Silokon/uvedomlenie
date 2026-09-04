@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Как обновить образец заполнения</title>
+<style>
+  body { font-family: Segoe UI, Arial, sans-serif; max-width: 760px; margin: 0 auto; padding: 20px 16px 60px; color: #1c2430; line-height: 1.5; }
+  h1 { font-size: 22px; } h2 { font-size: 17px; margin-top: 28px; }
+  ol li, ul li { margin: 8px 0; } code { background: #f0f3f8; padding: 1px 5px; border-radius: 4px; }
+  .box { background: #f0f3f8; border-radius: 8px; padding: 12px 14px; margin: 14px 0; font-size: 14px; }
+</style>
+</head>
+<body>
+<h1>Как обновить образец заполнения</h1>
+<p>Образец, который сотрудники видят на экране «Образец», берётся из файла <code>obrazec.xlsx</code>, лежащего рядом с программой на GitHub. Чтобы изменить образец, достаточно заменить этот файл. Программу трогать не нужно.</p>
+
+<h2>1. Подготовьте новый образец</h2>
+<ol>
+  <li>Скачайте текущий файл: откройте страницу репозитория, нажмите на <code>obrazec.xlsx</code>, затем кнопку «Download raw file» (значок со стрелкой вниз).</li>
+  <li>Откройте его в Excel и внесите изменения. Буквы ставятся по одной в квадрат, как обычно. Цвет букв можно любой, на экране он сохранится.</li>
+  <li>Сохраните файл под тем же именем <code>obrazec.xlsx</code> в формате Excel (.xlsx).</li>
+</ol>
+
+<h2>2. Загрузите файл на GitHub</h2>
+<ol>
+  <li>Войдите в свой аккаунт GitHub с компьютера или телефона.</li>
+  <li>Откройте страницу репозитория с программой.</li>
+  <li>Нажмите кнопку «Add file» (справа над списком файлов), затем «Upload files».</li>
+  <li>Перетащите новый <code>obrazec.xlsx</code> в область загрузки или выберите его кнопкой «choose your files». Имя файла должно быть точно таким же, тогда старый файл заменится.</li>
+  <li>Внизу страницы нажмите зелёную кнопку «Commit changes».</li>
+</ol>
+
+<div class="box">Через 1-2 минуты образец обновится у всех. Если на телефоне по-прежнему виден старый образец, закройте вкладку с программой и откройте её заново.</div>
+
+<h2>Что важно</h2>
+<ul>
+  <li>Заменяйте только <code>obrazec.xlsx</code>. Файл <code>index.html</code> это сама программа, его менять не нужно.</li>
+  <li>Не переименовывайте файл и не меняйте названия листов внутри него.</li>
+  <li>Данные, которые сотрудники вводят в форму, на GitHub не попадают: заполнение идёт в браузере, на сервер ничего не отправляется.</li>
+</ul>
+</body>
+</html>
