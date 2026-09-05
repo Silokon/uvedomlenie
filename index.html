@@ -1084,7 +1084,7 @@ function fieldRect(v, f){   // {pi, x, y, w, h} в px листа
   if (pi < 0 || !isFinite(x1)) return null;
   return { pi, x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
 }
-function placeHighlight(v, scrollTo){
+function placeHighlight(v, scrollTo, instant){
   const boxes = v.el.querySelectorAll(".pagebox");
   boxes.forEach(b => { const h = b.querySelector(".hl"); if (h) h.style.display = "none"; });
   if (currentField === null || !v.model) return;
@@ -1097,17 +1097,31 @@ function placeHighlight(v, scrollTo){
   if (scrollTo){
     const cw = box.querySelector(".cwrap");
     const top = cw.getBoundingClientRect().top - v.scroll.getBoundingClientRect().top + v.scroll.scrollTop + rect.y * z;
-    smoothScroll(v.scroll, { top: Math.max(0, top - v.scroll.clientHeight * 0.35) });
+    smoothScroll(v.scroll, { top: Math.max(0, top - v.scroll.clientHeight * 0.35) }, instant);
     const left = rect.x * z;
     if (left < v.scroll.scrollLeft || left + rect.w * z > v.scroll.scrollLeft + v.scroll.clientWidth)
-      smoothScroll(v.scroll, { left: Math.max(0, left - 40) });
+      smoothScroll(v.scroll, { left: Math.max(0, left - 40) }, instant);
   }
 }
-function syncToField(idx){
+function syncToField(idx, instant){
   currentField = idx;
-  placeHighlight(VIEWS.obr, true);
+  placeHighlight(VIEWS.obr, true, instant);
   if (VIEWS.blank.dirty && (current === 2 || document.body.classList.contains("triple"))) refreshBlank();
-  placeHighlight(VIEWS.blank, true);
+  placeHighlight(VIEWS.blank, true, instant);
+}
+// образец и бланк едут за прокруткой формы: поле, ближайшее к линии чтения (треть экрана сверху)
+function fieldAtReadingLine(){
+  const line = formScroll.getBoundingClientRect().top + formScroll.clientHeight * 0.33;
+  let best = null, bestD = Infinity;
+  for (let i = 0; i < FIELDS.length; i++){
+    if (FIELDS[i].h) continue;
+    const w = document.getElementById("w" + i); if (!w) continue;
+    const r = w.getBoundingClientRect();
+    const d = r.top <= line && r.bottom >= line ? 0 : Math.min(Math.abs(r.top - line), Math.abs(r.bottom - line));
+    if (d < bestD){ bestD = d; best = i; }
+    if (r.top > line + 400) break;
+  }
+  return best;
 }
 formEl.addEventListener("focusin", e => {
   const g = e.target.dataset && e.target.dataset.g;
@@ -1157,9 +1171,9 @@ function paneVisible(el){
   if (!pane || document.body.classList.contains("triple")) return true;
   return pane.id === "pane" + current;
 }
-function smoothScroll(el, opts){
+function smoothScroll(el, opts, instant){
   // скрытые экраны прокручиваем сразу, без анимации
-  if (typeof el.scrollTo === "function") el.scrollTo(Object.assign({ behavior: paneVisible(el) ? "smooth" : "auto" }, opts));
+  if (typeof el.scrollTo === "function") el.scrollTo(Object.assign({ behavior: !instant && paneVisible(el) ? "smooth" : "auto" }, opts));
   else { if (opts.top !== undefined) el.scrollTop = opts.top; if (opts.left !== undefined) el.scrollLeft = opts.left; }
 }
 function scrollElTo(scroller, el, offset){
@@ -1190,6 +1204,14 @@ formScroll.addEventListener("scroll", () => {
       for (let k = 1; k <= 4; k++){ const h = PAGE_HEADERS[k]; if (h && h.getBoundingClientRect().top <= topLine) n = k; }
     }
     if (n !== curPage) setPage(n);
+    // поле в фокусе и видно на экране: следим за ним; иначе за линией чтения
+    let near = null;
+    if (a && a.dataset && a.dataset.g !== undefined && formEl.contains(a)){
+      const r = a.getBoundingClientRect(), pr = formScroll.getBoundingClientRect();
+      if (r.bottom > pr.top && r.top < pr.bottom) near = +a.dataset.g;
+    }
+    if (near === null) near = fieldAtReadingLine();
+    if (near !== null && near !== currentField) syncToField(near, true);
   });
 });
 
