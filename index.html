@@ -1199,10 +1199,7 @@ function goPage(n){
 }
 // текущая страница по прокрутке формы
 let scrollTick = false;
-formScroll.addEventListener("scroll", () => {
-  if (scrollTick) return; scrollTick = true;
-  requestAnimationFrame(() => {
-    scrollTick = false;
+function updateFromScroll(){
     let n = 1;
     const a = document.activeElement;
     if (a && a.dataset && a.dataset.g !== undefined && formEl.contains(a)) n = pageOf(FIELDS[+a.dataset.g]);  // пока поле в фокусе, страница по нему
@@ -1219,8 +1216,14 @@ formScroll.addEventListener("scroll", () => {
     }
     if (near === null) near = fieldAtReadingLine();
     if (near !== null && near !== currentField) syncToField(near, true);
-  });
+}
+formScroll.addEventListener("scroll", () => {
+  if (scrollTick) return; scrollTick = true;
+  requestAnimationFrame(() => { scrollTick = false; updateFromScroll(); });
 });
+// по окончании прокрутки (в том числе инерционной на телефоне) и после восстановления страницы сверяем ещё раз
+formScroll.addEventListener("scrollend", () => updateFromScroll());
+window.addEventListener("pageshow", () => setTimeout(updateFromScroll, 100));
 
 // ==== Переключение экранов: вкладки, стрелки, свайп ====
 const track = document.getElementById("track");
@@ -1358,6 +1361,7 @@ forceBtn.addEventListener("click", download);
   else if (h === "obrazec" || h === "obr") show(0, true);
   else if (h === "blank" || h === "demo") show(2, true);
   else show(1, true);
+  updateFromScroll(); setPage(curPage);
   READY = true;
 })();
 let READY = false;
