@@ -116,6 +116,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   input.req:focus { border-color:#d43a3a; box-shadow:0 0 0 2px rgba(212,58,58,.15); }
   input.auto { background:#f3f7ff; }
   .star { color:#d43a3a; font-weight:700; }
+  .tag { color:#d43a3a; font-weight:700; }
+  .hint.warn { color:#d43a3a; font-weight:600; }
   .legend-req { font-size:12.5px; color:#8a2222; background:#fdeeee; border:1px solid #f0c9c9; border-radius:7px; padding:8px 12px; margin-bottom:6px; }
   .hint { font-size:11.5px; color:#6b7482; margin-top:3px; }
   .hint.link { color:#2f6fed; }
@@ -484,9 +486,10 @@ function addrHint(name){
   if (n.includes("городское и сельское поселение")) return "район или поселение, например ВЫБОРГСКИЙ РАЙОН; если не нужно, оставьте пустым";
   if (n.includes("населенный пункт")) return "город, посёлок или деревня, например ВЫБОРГ";
   if (n.includes("элемент улично-дорожной сети")) return "улица, проспект или переулок, например СЕМЕНОВСКАЯ";
-  if (n.includes("латинскими")) return "только латинские буквы, как в паспорте";
+  if (n.includes("латинскими")) return "только латинские буквы, как в паспорте; переключите клавиатуру на английский язык (EN)";
   return "";
 }
+const KIND_TAG = { subject: "область", district: "район", city: "город", street: "улица" };
 function kindOf(name){
   const n = name.toLowerCase();
   if (n.includes("субъект российской федерации")) return "subject";
@@ -496,8 +499,6 @@ function kindOf(name){
   if (n.includes("гражданство") || n.includes("место рождения: государство")) return "country";
   if (n.includes("удостоверяющий личность: вид")) return "doc";
   if (n.includes("профессия")) return "prof";
-  if (n.includes("наименование организации")) return "org";
-  if (n.includes("право пользования помещением")) return "docright";
   if (n.includes("место рождения: город")) return "city";
   return "";
 }
@@ -513,25 +514,14 @@ const LISTS = {
   country: ["УЗБЕКИСТАН","ТАДЖИКИСТАН","КИРГИЗИЯ","КАЗАХСТАН","АРМЕНИЯ","АЗЕРБАЙДЖАН","БЕЛАРУСЬ","МОЛДОВА","УКРАИНА","ТУРКМЕНИСТАН","ГРУЗИЯ","КИТАЙ","ВЬЕТНАМ","ТУРЦИЯ","ИНДИЯ","СЕРБИЯ","КНДР","ЕГИПЕТ","ИРАН","АФГАНИСТАН","ШРИ-ЛАНКА","БАНГЛАДЕШ","ПАКИСТАН","НЕПАЛ","ФИЛИППИНЫ","ИНДОНЕЗИЯ","ТАИЛАНД","МОНГОЛИЯ","КУБА","ЛИЦО БЕЗ ГРАЖДАНСТВА"],
   doc: ["ПАСПОРТ","ПАСПОРТ ИНОСТРАННОГО ГРАЖДАНИНА","ЗАГРАНПАСПОРТ","ПАСПОРТ РФ","ВИД НА ЖИТЕЛЬСТВО","ID КАРТА","СВИДЕТЕЛЬСТВО О РОЖДЕНИИ","УДОСТОВЕРЕНИЕ ЛИЧНОСТИ"],
   prof: ["СТРОИТЕЛЬ","РАЗНОРАБОЧИЙ","ПОДСОБНЫЙ РАБОЧИЙ","МАЛЯР","ШТУКАТУР","КАМЕНЩИК","СВАРЩИК","ПЛОТНИК","БЕТОНЩИК","МОНТАЖНИК","ЭЛЕКТРИК","ЭЛЕКТРОМОНТАЖНИК","ВОДИТЕЛЬ","ОТДЕЛОЧНИК","АРМАТУРЩИК","КРОВЕЛЬЩИК","ПЛИТОЧНИК","ГРУЗЧИК","УБОРЩИК","ПОВАР","СЛЕСАРЬ","САНТЕХНИК","МАШИНИСТ","ДОРОЖНЫЙ РАБОЧИЙ","ФАСАДЧИК","СТОЛЯР","ПРОРАБ","МАСТЕР","БРИГАДИР","МЕНЕДЖЕР","ИНЖЕНЕР"],
-  org: [],
-  docright: ["ДОГОВОР АРЕНДЫ","ДОГОВОР НАЙМА","ДОГОВОР БЕЗВОЗМЕЗДНОГО ПОЛЬЗОВАНИЯ","СВИДЕТЕЛЬСТВО О ПРАВЕ СОБСТВЕННОСТИ","ВЫПИСКА ИЗ ЕГРН","ДОГОВОР СУБАРЕНДЫ"],
 };
-const SESSION = {};  // значения, набранные в этой сессии, по видам полей (только в памяти страницы)
-function rebuildList(kind){
-  let dl = document.getElementById("dl_" + kind);
-  if (!dl){ dl = document.createElement("datalist"); dl.id = "dl_" + kind; document.body.appendChild(dl); }
-  const seen = new Set(); dl.innerHTML = "";
-  (SESSION[kind] || []).concat(LISTS[kind] || []).forEach(v => {
-    if (!v || seen.has(v)) return; seen.add(v);
-    const o = document.createElement("option"); o.value = v; dl.appendChild(o);
-  });
-}
-Object.keys(LISTS).forEach(rebuildList);
-function remember(kind, v){
-  v = (v || "").trim().toUpperCase(); if (!v || v.length < 2) return;
-  SESSION[kind] = SESSION[kind] || [];
-  if (!SESSION[kind].includes(v)){ SESSION[kind].unshift(v); rebuildList(kind); }
-}
+// Списки подсказок только встроенные: набранное пользователями нигде не запоминается и другим не показывается
+Object.keys(LISTS).forEach(kind => {
+  if (!LISTS[kind].length) return;
+  const dl = document.createElement("datalist"); dl.id = "dl_" + kind;
+  LISTS[kind].forEach(v => { const o = document.createElement("option"); o.value = v; dl.appendChild(o); });
+  document.body.appendChild(dl);
+});
 
 // ==== Построение формы ====
 const formEl = document.getElementById("fields");
@@ -550,6 +540,7 @@ function digitsOnly(input){
 function latinOnly(input){
   input.lang = "en";
   input.addEventListener("input", () => {
+    input.dataset.cyr = /[А-Яа-яЁё]/.test(input.value) ? "1" : "";
     const v = input.value.replace(/[^A-Za-z '\-]/g, "");
     if (v !== input.value){
       const pos = input.selectionStart - (input.value.length - v.length);
@@ -558,8 +549,13 @@ function latinOnly(input){
     }
   });
 }
-function fillLabel(label, f, text){
+function fillLabel(label, f, text, tag, tail){
   label.textContent = text;
+  if (tag){ // красная пометка в скобках по просьбе клиента: (область), (район), (город), (улица)
+    const t = document.createElement("span"); t.className = "tag"; t.textContent = " (" + tag + ")";
+    label.appendChild(t);
+  }
+  if (tail) label.appendChild(document.createTextNode(tail));
   if (f.req){
     const star = document.createElement("span");
     star.className = "star"; star.textContent = " *";
@@ -600,16 +596,21 @@ FIELDS.forEach((f, idx) => {
   const kind = kindOf(f.n);
   if (f.t === "L"){
     const anchors = anchorsIn(f.s, f.r, f.from, f.to);
-    fillLabel(label, f, f.n + " (до " + anchors.length + " симв.)");
+    const tag = KIND_TAG[kind] && !/^Место рождения/.test(f.n) ? KIND_TAG[kind] : "";
+    fillLabel(label, f, f.n, tag, " (до " + anchors.length + " симв.)");
     const input = mkInput("f" + idx, idx); input.maxLength = anchors.length;
     if (f.req) input.classList.add("req");
     if (f.num) digitsOnly(input);
     if (/латинскими/i.test(f.n)) latinOnly(input);
-    if (kind){ input.setAttribute("list", "dl_" + kind); input.dataset.kind = kind; }
+    if (kind && LISTS[kind] && LISTS[kind].length) input.setAttribute("list", "dl_" + kind);
     const hint = document.createElement("div"); hint.className = "hint";
     const base = f.hint || addrHint(f.n);
     hint.textContent = base;
-    input.addEventListener("input", () => { hint.textContent = (base ? base + " · " : "") + "осталось клеток: " + (anchors.length - input.value.length); });
+    input.addEventListener("input", () => {
+      if (input.dataset.cyr){ hint.textContent = "Русские буквы здесь не принимаются. Переключите клавиатуру на английский язык (EN)."; hint.classList.add("warn"); return; }
+      hint.classList.remove("warn");
+      hint.textContent = (base ? base + " · " : "") + "осталось клеток: " + (anchors.length - input.value.length);
+    });
     wrap.appendChild(input); wrap.appendChild(hint);
     LABELS["f" + idx] = f.n;
   } else if (f.t === "D"){
@@ -658,10 +659,6 @@ formEl.addEventListener("input", e => {
   const el = e.target;
   if (el.type === "text" && el.maxLength > 0 && el.value.length > el.maxLength) el.value = el.value.slice(0, el.maxLength);
 }, true);
-formEl.addEventListener("change", e => {
-  const el = e.target;
-  if (el.dataset.kind) remember(el.dataset.kind, el.value);
-});
 
 // ==== Переход между полями с клавиатуры ====
 const NAV = Array.from(formEl.querySelectorAll("input"));
