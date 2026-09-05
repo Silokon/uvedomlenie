@@ -231,6 +231,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   </div>
 </div>
 
+<script>
+// Если скрипт упадёт (старый браузер, нехватка памяти), показываем причину на экране, чтобы её можно было сфотографировать
+window.addEventListener("error", function(e){
+  try {
+    let box = document.getElementById("jserr");
+    if (!box){ box = document.createElement("div"); box.id = "jserr"; box.style.cssText = "position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:#fff3f3;border:2px solid #d43a3a;color:#7a1010;border-radius:8px;padding:10px 12px;font:13px/1.4 Segoe UI,Arial,sans-serif;max-height:45vh;overflow:auto"; (document.body || document.documentElement).appendChild(box); }
+    box.textContent = "Программа не смогла запуститься. Сфотографируйте этот экран и отправьте разработчику. " + (e.message || e) + " (строка " + (e.lineno || "?") + ") · " + navigator.userAgent;
+  } catch (_) {}
+});
+</script>
 <script id="cfg">
 
 // ==== Конфигурация полей (генерируется из структуры бланка) ====
